@@ -29,7 +29,7 @@ type metricObject struct {
 }
 
 type MetricForwarder struct {
-	Logger           *logging.Logger
+	Logger           logging.ILogger
 	MetricObjects    []metricObject
 	client           *http.Client
 	licenseKey       string
@@ -38,7 +38,7 @@ type MetricForwarder struct {
 }
 
 func NewMetricForwarder(
-	logger *logging.Logger,
+	logger logging.ILogger,
 	licenseKey string,
 	metricsEndpoint string,
 	commonAttributes map[string]string,

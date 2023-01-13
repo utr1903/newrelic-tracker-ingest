@@ -39,7 +39,7 @@ type appNames struct {
 
 type UniquesApps struct {
 	AccountId       int64
-	Logger          *logging.Logger
+	Logger          logging.ILogger
 	Gqlc            *graphql.GraphQlClient
 	MetricForwarder *metrics.MetricForwarder
 }
@@ -55,6 +55,7 @@ func NewUniqueApps(
 	)
 	gqlc := graphql.NewGraphQlClient(
 		logger,
+		"https://api.eu.newrelic.com/graphql",
 		trackedAttributeType,
 		queryTemplate,
 	)

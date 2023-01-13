@@ -40,7 +40,7 @@ type appIngest struct {
 
 type DataIngest struct {
 	AccountId       int64
-	Logger          *logging.Logger
+	Logger          logging.ILogger
 	Gqlc            *graphql.GraphQlClient
 	MetricForwarder *metrics.MetricForwarder
 }
@@ -56,6 +56,7 @@ func NewDataIngests(
 	)
 	gqlc := graphql.NewGraphQlClient(
 		logger,
+		"https://api.eu.newrelic.com/graphql",
 		trackedAttributeType,
 		queryTemplate,
 	)

@@ -19,22 +19,25 @@ type graphQlRequestPayload struct {
 }
 
 type GraphQlClient struct {
-	Logger            *logging.Logger
-	HttpClient        *http.Client
-	QueryTemplateName string
-	QueryTemplate     string
+	Logger                  logging.ILogger
+	HttpClient              *http.Client
+	NewrelicGraphQlEndpoint string
+	QueryTemplateName       string
+	QueryTemplate           string
 }
 
 func NewGraphQlClient(
-	logger *logging.Logger,
+	logger logging.ILogger,
+	newrelicGraphQlEndpoint string,
 	queryTemplateName string,
 	queryTemplate string,
 ) *GraphQlClient {
 	return &GraphQlClient{
-		Logger:            logger,
-		HttpClient:        &http.Client{Timeout: time.Duration(30 * time.Second)},
-		QueryTemplateName: queryTemplateName,
-		QueryTemplate:     queryTemplate,
+		Logger:                  logger,
+		HttpClient:              &http.Client{Timeout: time.Duration(30 * time.Second)},
+		NewrelicGraphQlEndpoint: newrelicGraphQlEndpoint,
+		QueryTemplateName:       queryTemplateName,
+		QueryTemplate:           queryTemplate,
 	}
 }
 
@@ -58,7 +61,7 @@ func (c *GraphQlClient) Execute(
 	// Create request
 	req, err := http.NewRequest(
 		http.MethodPost,
-		"https://api.eu.newrelic.com/graphql",
+		c.NewrelicGraphQlEndpoint,
 		payload,
 	)
 	if err != nil {

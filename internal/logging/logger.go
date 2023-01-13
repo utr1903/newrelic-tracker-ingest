@@ -14,6 +14,16 @@ const (
 	LOGS_NEW_RELIC_RETURNED_NOT_OK_STATUS  = "http request has returned not OK status"
 )
 
+type ILogger interface {
+	LogWithFields(
+		lvl logrus.Level,
+		msg string,
+		attributes map[string]string,
+	)
+
+	Flush() error
+}
+
 type Logger struct {
 	log       *logrus.Logger
 	forwarder *forwarder
@@ -48,19 +58,6 @@ func NewLoggerWithForwarder(
 	return &Logger{
 		log:       l,
 		forwarder: f,
-	}
-}
-
-func (l *Logger) Log(
-	lvl logrus.Level,
-	msg string,
-) {
-
-	switch lvl {
-	case logrus.ErrorLevel:
-		l.log.Error(msg)
-	default:
-		l.log.Debug(msg)
 	}
 }
 
