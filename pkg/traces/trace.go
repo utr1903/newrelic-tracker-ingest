@@ -8,7 +8,7 @@ import (
 )
 
 func Run() {
-	appsUniques := apps.NewUniques()
 	accountId, _ := strconv.ParseInt(os.Getenv("NEWRELIC_ACCOUNT_ID"), 10, 64)
-	appsUniques.Run(accountId)
+	appsUniques := apps.NewUniqueApps(accountId)
+	appsUniques.Run()
 }
