@@ -82,7 +82,7 @@ func (mf *MetricForwarder) Run() error {
 	if len(mf.MetricObjects[0].Metrics) == 0 {
 		mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_THERE_ARE_NO_METRICS_TO_SEND,
 			map[string]string{
-				"tracker.package": "internal.metrics.metrics",
+				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
 			})
 		return nil
@@ -103,7 +103,7 @@ func (mf *MetricForwarder) Run() error {
 	if err != nil {
 		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_HTTP_REQUEST_COULD_NOT_BE_CREATED,
 			map[string]string{
-				"tracker.package": "internal.metrics.metrics",
+				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
 				"tracker.error":   err.Error(),
 			})
@@ -118,7 +118,7 @@ func (mf *MetricForwarder) Run() error {
 	if err != nil {
 		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_HTTP_REQUEST_HAS_FAILED,
 			map[string]string{
-				"tracker.package": "internal.metrics.metrics",
+				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
 				"tracker.error":   err.Error(),
 			})
@@ -130,7 +130,7 @@ func (mf *MetricForwarder) Run() error {
 	if res.StatusCode != http.StatusAccepted {
 		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_NEW_RELIC_RETURNED_NOT_OK_STATUS,
 			map[string]string{
-				"tracker.package": "internal.metrics.metrics",
+				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
 				"tracker.error":   err.Error(),
 			})
@@ -139,7 +139,7 @@ func (mf *MetricForwarder) Run() error {
 
 	mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_METRICS_ARE_FORWARDED,
 		map[string]string{
-			"tracker.package": "internal.metrics.metrics",
+			"tracker.package": "internal.metrics",
 			"tracker.file":    "forwarder.go",
 		})
 
@@ -153,7 +153,7 @@ func (mf *MetricForwarder) createPayload() (
 	// Create payload
 	mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_CREATING_PAYLOAD,
 		map[string]string{
-			"tracker.package": "internal.metrics.metrics",
+			"tracker.package": "internal.metrics",
 			"tracker.file":    "forwarder.go",
 		})
 
@@ -161,7 +161,7 @@ func (mf *MetricForwarder) createPayload() (
 	if err != nil {
 		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_PAYLOAD_COULD_NOT_BE_CREATED,
 			map[string]string{
-				"tracker.package": "internal.metrics.metrics",
+				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
 				"tracker.error":   err.Error(),
 			})
@@ -176,7 +176,7 @@ func (mf *MetricForwarder) createPayload() (
 	if _, err = zw.Write(json); err != nil {
 		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_PAYLOAD_COULD_NOT_BE_ZIPPED,
 			map[string]string{
-				"tracker.package": "internal.metrics.metrics",
+				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
 				"tracker.error":   err.Error(),
 			})
@@ -186,7 +186,7 @@ func (mf *MetricForwarder) createPayload() (
 	if err = zw.Close(); err != nil {
 		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_PAYLOAD_COULD_NOT_BE_ZIPPED,
 			map[string]string{
-				"tracker.package": "internal.metrics.metrics",
+				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
 				"tracker.error":   err.Error(),
 			})
