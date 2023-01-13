@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -25,31 +24,15 @@ const queryTemplate = `
   }
 }
 `
-const trackedMetricName = "uniqueAppNames"
+const trackedAttributeType = "uniqueAppNames"
 
 type queryVariables struct {
 	AccountId int64
 	NrqlQuery string
 }
 
-type result struct {
+type appNames struct {
 	Apps []string `json:"apps"`
-}
-
-type nrql struct {
-	Results []result `json:"results"`
-}
-
-type actor struct {
-	Nrql nrql `json:"nrql"`
-}
-
-type data struct {
-	Actor actor `json:"actor"`
-}
-
-type response struct {
-	Data data `json:"data"`
 }
 
 type UniquesApps struct {
@@ -62,34 +45,53 @@ type UniquesApps struct {
 func NewUniqueApps(
 	accountId int64,
 ) *UniquesApps {
+	logger := logging.NewLoggerWithForwarder(
+		"DEBUG",
+		os.Getenv("NEWRELIC_LICENSE_KEY"),
+		"https://log-api.eu.newrelic.com/log/v1",
+		setCommonAttributes(accountId),
+	)
+	gqlc := graphql.NewGraphQlClient(
+		logger,
+		trackedAttributeType,
+		queryTemplate,
+	)
+	mf := metrics.NewMetricForwarder(
+		logger,
+		os.Getenv("NEWRELIC_LICENSE_KEY"),
+		"https://metric-api.eu.newrelic.com/metric/v1",
+		setCommonAttributes(accountId),
+	)
 	return &UniquesApps{
-		AccountId: accountId,
-		Logger: logging.NewLoggerWithForwarder(
-			"DEBUG",
-			os.Getenv("NEWRELIC_LICENSE_KEY"),
-			"https://log-api.eu.newrelic.com/log/v1",
-		),
-		Gqlc: graphql.NewGraphQlClient(
-			trackedMetricName,
-			queryTemplate,
-		),
-		MetricForwarder: metrics.NewMetricForwarder(
-			os.Getenv("NEWRELIC_LICENSE_KEY"),
-			"https://metric-api.eu.newrelic.com/metric/v1",
-		),
+		AccountId:       accountId,
+		Logger:          logger,
+		Gqlc:            gqlc,
+		MetricForwarder: mf,
+	}
+}
+
+func setCommonAttributes(
+	accountId int64,
+) map[string]string {
+	return map[string]string{
+		"tracker.attributeType": trackedAttributeType,
+		"tracker.accountId":     strconv.FormatInt(accountId, 10),
 	}
 }
 
 func (a *UniquesApps) Run() error {
 
 	// Fetch the unique application names per GraphQL
-	appNames, err := a.fetchUniqueApps(a.AccountId)
+	appNames, err := a.fetchUniqueApps()
 	if err != nil {
 		return nil
 	}
 
 	// Create & flush metrics
-	a.flushMetrics(appNames)
+	err = a.flushMetrics(appNames)
+	if err != nil {
+		return nil
+	}
 
 	// Flush logs
 	a.flushLogs()
@@ -97,43 +99,18 @@ func (a *UniquesApps) Run() error {
 	return nil
 }
 
-func (a *UniquesApps) fetchUniqueApps(
-	accountId int64,
-) (
+func (a *UniquesApps) fetchUniqueApps() (
 	[]string,
 	error,
 ) {
 	qv := &queryVariables{
-		AccountId: accountId,
+		AccountId: a.AccountId,
 		NrqlQuery: "FROM Span SELECT uniques(entity.name) AS `apps` SINCE 1 week ago LIMIT MAX",
 	}
 
-	resBody, err := a.Gqlc.Execute(qv)
+	res := &graphql.GraphQlResponse[appNames]{}
+	err := a.Gqlc.Execute(qv, res)
 	if err != nil {
-		a.Logger.LogWithFields(logrus.ErrorLevel, APPS_UNIQUES_GRAPHQL_REQUEST_HAS_FAILED,
-			map[string]string{
-				"tracker.trackedMetricName": trackedMetricName,
-				"tracker.accountId":         strconv.FormatInt(accountId, 10),
-				"tracker.error":             err.Error(),
-			})
-		return nil, err
-	}
-
-	a.Logger.LogWithFields(logrus.DebugLevel, APPS_UNIQUES_PARSING_GRAPHQL_RESPONSE,
-		map[string]string{
-			"tracker.trackedMetricName": trackedMetricName,
-			"tracker.accountId":         strconv.FormatInt(accountId, 10),
-		})
-
-	res := &response{}
-	err = json.Unmarshal(resBody, res)
-	if err != nil {
-		a.Logger.LogWithFields(logrus.ErrorLevel, APPS_UNIQUES_GRAPHQL_RESPONSE_COULD_NOT_BE_PARSED,
-			map[string]string{
-				"tracker.trackedMetricName": trackedMetricName,
-				"tracker.accountId":         strconv.FormatInt(accountId, 10),
-				"tracker.error":             err.Error(),
-			})
 		return nil, err
 	}
 
@@ -146,17 +123,9 @@ func (a *UniquesApps) flushMetrics(
 
 	a.Logger.LogWithFields(logrus.DebugLevel, APPS_UNIQUES_FLUSHING_METRICS,
 		map[string]string{
-			"tracker.trackedMetricName": trackedMetricName,
-			"tracker.accountId":         strconv.FormatInt(a.AccountId, 10),
+			"tracker.package": "pkg.traces.apps",
+			"tracker.file":    "uniques.go",
 		})
-
-	// Add common block
-	a.MetricForwarder.AddCommon(
-		map[string]string{
-			"tracker.trackedMetricName": trackedMetricName,
-			"tracker.accountId":         strconv.FormatInt(a.AccountId, 10),
-		},
-	)
 
 	// Add individual metrics
 	for _, appName := range appNames {
@@ -173,19 +142,13 @@ func (a *UniquesApps) flushMetrics(
 
 	err := a.MetricForwarder.Run()
 	if err != nil {
-		a.Logger.LogWithFields(logrus.ErrorLevel, APPS_UNIQUES_METRICS_COULD_NOT_BE_FORWARDED,
-			map[string]string{
-				"tracker.trackedMetricName": trackedMetricName,
-				"tracker.accountId":         strconv.FormatInt(a.AccountId, 10),
-				"tracker.error":             err.Error(),
-			})
 		return err
 	}
 
 	a.Logger.LogWithFields(logrus.DebugLevel, APPS_UNIQUES_METRICS_ARE_FORWARDED,
 		map[string]string{
-			"tracker.trackedMetricName": trackedMetricName,
-			"tracker.accountId":         strconv.FormatInt(a.AccountId, 10),
+			"tracker.package": "pkg.traces.apps",
+			"tracker.file":    "uniques.go",
 		})
 
 	return nil

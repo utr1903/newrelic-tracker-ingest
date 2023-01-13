@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -31,27 +32,60 @@ type forwarder struct {
 	levels []logrus.Level
 	logs   []logrus.Entry
 
-	client       *http.Client
-	licenseKey   string
-	logsEndpoint string
+	client           *http.Client
+	licenseKey       string
+	logsEndpoint     string
+	commonAttributes map[string]string
 }
 
 func newForwarder(
 	levels []logrus.Level,
 	licenseKey string,
 	logsEndpoint string,
+	commonAttributes map[string]string,
 ) *forwarder {
-
-	// Create HTTP client
-	client := http.Client{Timeout: time.Duration(30 * time.Second)}
-
 	return &forwarder{
-		levels:       levels,
-		logs:         make([]logrus.Entry, 0),
-		client:       &client,
-		licenseKey:   licenseKey,
-		logsEndpoint: logsEndpoint,
+		levels:           levels,
+		logs:             make([]logrus.Entry, 0),
+		client:           &http.Client{Timeout: time.Duration(30 * time.Second)},
+		licenseKey:       licenseKey,
+		logsEndpoint:     logsEndpoint,
+		commonAttributes: setCommonAttributes(commonAttributes),
 	}
+}
+
+func setCommonAttributes(
+	commonAttrs map[string]string,
+) map[string]string {
+
+	// Copy the given attributes
+	attrs := make(map[string]string)
+	for k, v := range commonAttrs {
+		attrs[k] = v
+	}
+
+	// Add the fixed attributes afterwards to avoid them
+	// being overridden by the given attributes
+
+	// Instrumentation provider
+	attrs["instrumentation.provider"] = "newrelic-tracker-ingest"
+
+	// Node name
+	if val := os.Getenv("NODE_NAME"); val != "" {
+		attrs["nodeName"] = val
+	}
+
+	// Namespace name
+	if val := os.Getenv("NAMESPACE_NAME"); val != "" {
+		attrs["namespaceName"] = val
+	}
+
+	// Pod name
+	if val := os.Getenv("POD_NAME"); val != "" {
+		attrs["podName"] = val
+	}
+
+	return attrs
 }
 
 func (f *forwarder) Levels() []logrus.Level {
@@ -86,7 +120,7 @@ func (f *forwarder) createNewRelicLogs() []logObject {
 	}
 
 	// Create common block
-	for key, val := range getCommonAttributes() {
+	for key, val := range f.commonAttributes {
 		lo.Common.Attributes[key] = val
 	}
 

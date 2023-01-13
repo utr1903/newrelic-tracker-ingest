@@ -19,30 +19,11 @@ type Logger struct {
 	forwarder *forwarder
 }
 
-func NewLogger(
-	logLevel string,
-) *Logger {
-	l := logrus.New()
-	l.Out = os.Stdout
-	l.Formatter = &logrus.JSONFormatter{}
-
-	switch logLevel {
-	case "DEBUG":
-		l.Level = logrus.DebugLevel
-	default:
-		l.Level = logrus.ErrorLevel
-	}
-
-	return &Logger{
-		log:       l,
-		forwarder: nil,
-	}
-}
-
 func NewLoggerWithForwarder(
 	logLevel string,
 	licenseKey string,
 	logsEndpoint string,
+	commonAttributes map[string]string,
 ) *Logger {
 	l := logrus.New()
 	l.Out = os.Stdout
@@ -55,7 +36,13 @@ func NewLoggerWithForwarder(
 		l.Level = logrus.ErrorLevel
 	}
 
-	f := newForwarder(logrus.AllLevels, licenseKey, logsEndpoint)
+	f := newForwarder(
+		logrus.AllLevels,
+		licenseKey,
+		logsEndpoint,
+		commonAttributes,
+	)
+
 	l.AddHook(f)
 
 	return &Logger{
@@ -69,18 +56,11 @@ func (l *Logger) Log(
 	msg string,
 ) {
 
-	fields := logrus.Fields{}
-
-	// Put common attributes
-	for key, val := range getCommonAttributes() {
-		fields[key] = val
-	}
-
 	switch lvl {
 	case logrus.ErrorLevel:
-		l.log.WithFields(fields).Error(msg)
+		l.log.Error(msg)
 	default:
-		l.log.WithFields(fields).Debug(msg)
+		l.log.Debug(msg)
 	}
 }
 
@@ -91,11 +71,6 @@ func (l *Logger) LogWithFields(
 ) {
 
 	fields := logrus.Fields{}
-
-	// Put common attributes
-	for key, val := range getCommonAttributes() {
-		fields[key] = val
-	}
 
 	// Put specific attributes
 	for key, val := range attributes {
@@ -108,27 +83,6 @@ func (l *Logger) LogWithFields(
 	default:
 		l.log.WithFields(fields).Debug(msg)
 	}
-}
-
-func getCommonAttributes() map[string]string {
-	attrs := map[string]string{
-		"instrumentation.provider": "newrelic-tracker-ingest",
-	}
-	// Node name
-	if val := os.Getenv("NODE_NAME"); val != "" {
-		attrs["nodeName"] = val
-	}
-
-	// Namespace name
-	if val := os.Getenv("NAMESPACE_NAME"); val != "" {
-		attrs["namespaceName"] = val
-	}
-
-	// Pod name
-	if val := os.Getenv("POD_NAME"); val != "" {
-		attrs["podName"] = val
-	}
-	return attrs
 }
 
 func (l *Logger) Flush() error {

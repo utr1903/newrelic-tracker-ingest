@@ -1,6 +1,7 @@
 package metrics
 
 const (
+	METRICS_CREATING_PAYLOAD                  = "creating payload"
 	METRICS_PAYLOAD_COULD_NOT_BE_CREATED      = "payload could not be created"
 	METRICS_PAYLOAD_COULD_NOT_BE_ZIPPED       = "payload could not be zipped"
 	METRICS_HTTP_REQUEST_COULD_NOT_BE_CREATED = "http request could not be created"

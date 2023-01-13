@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
 )
 
 type graphQlRequestPayload struct {
@@ -16,16 +19,19 @@ type graphQlRequestPayload struct {
 }
 
 type GraphQlClient struct {
+	Logger            *logging.Logger
 	HttpClient        *http.Client
 	QueryTemplateName string
 	QueryTemplate     string
 }
 
 func NewGraphQlClient(
+	logger *logging.Logger,
 	queryTemplateName string,
 	queryTemplate string,
 ) *GraphQlClient {
 	return &GraphQlClient{
+		Logger:            logger,
 		HttpClient:        &http.Client{Timeout: time.Duration(30 * time.Second)},
 		QueryTemplateName: queryTemplateName,
 		QueryTemplate:     queryTemplate,
@@ -34,26 +40,35 @@ func NewGraphQlClient(
 
 func (c *GraphQlClient) Execute(
 	queryVariables any,
-) (
-	[]byte,
-	error,
-) {
+	result any,
+) error {
 
 	// Substitute variables within query
 	query, err := c.substituteTemplateQuery(queryVariables)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	// Create payload
 	payload, err := c.createPayload(query)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Create request
-	req, err := http.NewRequest(http.MethodPost, "https://api.eu.newrelic.com/graphql", payload)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://api.eu.newrelic.com/graphql",
+		payload,
+	)
 	if err != nil {
-		return nil, err
+		c.Logger.LogWithFields(logrus.ErrorLevel, GRAPHQL_CREATING_HTTP_REQUEST_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   err.Error(),
+			})
+		return err
 	}
 
 	// Add headers
@@ -63,22 +78,51 @@ func (c *GraphQlClient) Execute(
 	// Perform HTTP request
 	res, err := c.HttpClient.Do(req)
 	if err != nil {
-		return nil, err
+		c.Logger.LogWithFields(logrus.ErrorLevel, GRAPHQL_PERFORMING_HTTP_REQUEST_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   err.Error(),
+			})
+		return err
 	}
 	defer res.Body.Close()
 
 	// Read HTTP response
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		c.Logger.LogWithFields(logrus.ErrorLevel, GRAPHQL_READING_HTTP_RESPONSE_BODY_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   err.Error(),
+			})
+		return err
 	}
 
 	// Check if call was successful
 	if res.StatusCode != http.StatusOK {
-		return body, errors.New("graphql request returned an error")
+		c.Logger.LogWithFields(logrus.ErrorLevel, GRAPHQL_RESPONSE_HAS_RETURNED_NOT_OK_STATUS_CODE,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   GRAPHQL_RESPONSE_HAS_RETURNED_NOT_OK_STATUS_CODE,
+			})
+		return errors.New(GRAPHQL_RESPONSE_HAS_RETURNED_NOT_OK_STATUS_CODE)
 	}
 
-	return body, nil
+	err = json.Unmarshal(body, result)
+	if err != nil {
+		c.Logger.LogWithFields(logrus.ErrorLevel, GRAPHQL_PARSING_HTTP_RESPONSE_BODY_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   err.Error(),
+			})
+		return err
+	}
+
+	return nil
 }
 
 func (c *GraphQlClient) substituteTemplateQuery(
@@ -88,15 +132,37 @@ func (c *GraphQlClient) substituteTemplateQuery(
 	error,
 ) {
 	// Parse query template
+	c.Logger.LogWithFields(logrus.DebugLevel, GRAPHQL_SUBSTITUTING_TEMPLATE_VARIABLES,
+		map[string]string{
+			"tracker.package": "internal.graphql",
+			"tracker.file":    "client.go",
+		})
 	t, err := template.New(c.QueryTemplateName).Parse(c.QueryTemplate)
 	if err != nil {
+		c.Logger.LogWithFields(logrus.ErrorLevel, GRAPHQL_SUBSTITUTING_TEMPLATE_VARIABLES_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   err.Error(),
+			})
 		return nil, err
 	}
 
 	// Write substituted query template into buffer
+	c.Logger.LogWithFields(logrus.DebugLevel, GRAPHQL_EXECUTING_REQUEST,
+		map[string]string{
+			"tracker.package": "internal.graphql",
+			"tracker.file":    "client.go",
+		})
 	buf := new(bytes.Buffer)
 	err = t.Execute(buf, queryVariables)
 	if err != nil {
+		c.Logger.LogWithFields(logrus.ErrorLevel, GRAPHQL_SUBSTITUTING_TEMPLATE_VARIABLES_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   err.Error(),
+			})
 		return nil, err
 	}
 
@@ -117,6 +183,12 @@ func (c *GraphQlClient) createPayload(
 		Query: *query,
 	})
 	if err != nil {
+		c.Logger.LogWithFields(logrus.DebugLevel, GRAPHQL_CREATING_PAYLOAD_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.graphql",
+				"tracker.file":    "client.go",
+				"tracker.error":   err.Error(),
+			})
 		return nil, err
 	}
 	return bytes.NewBuffer(payload), nil

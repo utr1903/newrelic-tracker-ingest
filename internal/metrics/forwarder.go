@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
 )
 
 type commonBlock struct {
@@ -27,32 +29,32 @@ type metricObject struct {
 }
 
 type MetricForwarder struct {
-	MetricObjects   []metricObject
-	client          *http.Client
-	licenseKey      string
-	metricsEndpoint string
+	Logger           *logging.Logger
+	MetricObjects    []metricObject
+	client           *http.Client
+	licenseKey       string
+	metricsEndpoint  string
+	commonAttributes map[string]string
 }
 
 func NewMetricForwarder(
+	logger *logging.Logger,
 	licenseKey string,
 	metricsEndpoint string,
+	commonAttributes map[string]string,
 ) *MetricForwarder {
 	return &MetricForwarder{
+		Logger: logger,
 		MetricObjects: []metricObject{{
-			Common:  &commonBlock{},
+			Common: &commonBlock{
+				Attributes: commonAttributes,
+			},
 			Metrics: []metricBlock{},
 		}},
-		client:          &http.Client{Timeout: time.Duration(30 * time.Second)},
-		licenseKey:      licenseKey,
-		metricsEndpoint: metricsEndpoint,
-	}
-}
-
-func (mf *MetricForwarder) AddCommon(
-	attributes map[string]string,
-) {
-	mf.MetricObjects[0].Common = &commonBlock{
-		Attributes: attributes,
+		client:           &http.Client{Timeout: time.Duration(30 * time.Second)},
+		licenseKey:       licenseKey,
+		metricsEndpoint:  metricsEndpoint,
+		commonAttributes: commonAttributes,
 	}
 }
 
@@ -84,9 +86,19 @@ func (mf *MetricForwarder) Run() error {
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequest(http.MethodPost, mf.metricsEndpoint, payloadZipped)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		mf.metricsEndpoint,
+		payloadZipped,
+	)
 	if err != nil {
-		return errors.New(METRICS_HTTP_REQUEST_COULD_NOT_BE_CREATED)
+		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_HTTP_REQUEST_COULD_NOT_BE_CREATED,
+			map[string]string{
+				"tracker.package": "internal.metrics.metrics",
+				"tracker.file":    "forwarder.go",
+				"tracker.error":   err.Error(),
+			})
+		return err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Encoding", "gzip")
@@ -95,13 +107,25 @@ func (mf *MetricForwarder) Run() error {
 	// Perform HTTP request
 	res, err := mf.client.Do(req)
 	if err != nil {
-		return errors.New(METRICS_HTTP_REQUEST_HAS_FAILED)
+		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_HTTP_REQUEST_HAS_FAILED,
+			map[string]string{
+				"tracker.package": "internal.metrics.metrics",
+				"tracker.file":    "forwarder.go",
+				"tracker.error":   err.Error(),
+			})
+		return err
 	}
 	defer res.Body.Close()
 
 	// Check if call was successful
 	if res.StatusCode != http.StatusAccepted {
-		return errors.New(METRICS_NEW_RELIC_RETURNED_NOT_OK_STATUS)
+		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_NEW_RELIC_RETURNED_NOT_OK_STATUS,
+			map[string]string{
+				"tracker.package": "internal.metrics.metrics",
+				"tracker.file":    "forwarder.go",
+				"tracker.error":   err.Error(),
+			})
+		return err
 	}
 
 	return nil
@@ -112,9 +136,21 @@ func (mf *MetricForwarder) createPayload() (
 	error,
 ) {
 	// Create payload
+	mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_CREATING_PAYLOAD,
+		map[string]string{
+			"tracker.package": "internal.metrics.metrics",
+			"tracker.file":    "forwarder.go",
+		})
+
 	json, err := json.Marshal(mf.MetricObjects)
 	if err != nil {
-		return nil, errors.New(METRICS_PAYLOAD_COULD_NOT_BE_CREATED)
+		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_PAYLOAD_COULD_NOT_BE_CREATED,
+			map[string]string{
+				"tracker.package": "internal.metrics.metrics",
+				"tracker.file":    "forwarder.go",
+				"tracker.error":   err.Error(),
+			})
+		return nil, err
 	}
 
 	// Zip the payload
@@ -123,11 +159,23 @@ func (mf *MetricForwarder) createPayload() (
 	defer zw.Close()
 
 	if _, err = zw.Write(json); err != nil {
-		return nil, errors.New(METRICS_PAYLOAD_COULD_NOT_BE_ZIPPED)
+		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_PAYLOAD_COULD_NOT_BE_ZIPPED,
+			map[string]string{
+				"tracker.package": "internal.metrics.metrics",
+				"tracker.file":    "forwarder.go",
+				"tracker.error":   err.Error(),
+			})
+		return nil, err
 	}
 
 	if err = zw.Close(); err != nil {
-		return nil, errors.New(METRICS_PAYLOAD_COULD_NOT_BE_ZIPPED)
+		mf.Logger.LogWithFields(logrus.ErrorLevel, METRICS_PAYLOAD_COULD_NOT_BE_ZIPPED,
+			map[string]string{
+				"tracker.package": "internal.metrics.metrics",
+				"tracker.file":    "forwarder.go",
+				"tracker.error":   err.Error(),
+			})
+		return nil, err
 	}
 
 	return &payloadZipped, nil
