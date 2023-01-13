@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -132,9 +133,9 @@ func (mf *MetricForwarder) Run() error {
 			map[string]string{
 				"tracker.package": "internal.metrics",
 				"tracker.file":    "forwarder.go",
-				"tracker.error":   err.Error(),
+				"tracker.error":   METRICS_NEW_RELIC_RETURNED_NOT_OK_STATUS,
 			})
-		return err
+		return errors.New(METRICS_NEW_RELIC_RETURNED_NOT_OK_STATUS)
 	}
 
 	mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_METRICS_ARE_FORWARDED,
