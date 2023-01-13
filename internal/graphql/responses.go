@@ -2,7 +2,8 @@ package graphql
 
 // --- GraphQL for NRQL query --- //
 type GraphQlResponse[T interface{}] struct {
-	Data data[T] `json:"data"`
+	Data   data[T]     `json:"data"`
+	Errors interface{} `json:"errors"`
 }
 
 type data[T interface{}] struct {

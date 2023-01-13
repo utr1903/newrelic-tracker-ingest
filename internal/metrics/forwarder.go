@@ -79,6 +79,15 @@ func (mf *MetricForwarder) AddMetric(
 
 func (mf *MetricForwarder) Run() error {
 
+	if len(mf.MetricObjects[0].Metrics) == 0 {
+		mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_THERE_ARE_NO_METRICS_TO_SEND,
+			map[string]string{
+				"tracker.package": "internal.metrics.metrics",
+				"tracker.file":    "forwarder.go",
+			})
+		return nil
+	}
+
 	// Create zipped payload
 	payloadZipped, err := mf.createPayload()
 	if err != nil {
@@ -127,6 +136,12 @@ func (mf *MetricForwarder) Run() error {
 			})
 		return err
 	}
+
+	mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_METRICS_ARE_FORWARDED,
+		map[string]string{
+			"tracker.package": "internal.metrics.metrics",
+			"tracker.file":    "forwarder.go",
+		})
 
 	return nil
 }

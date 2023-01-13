@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -115,6 +116,16 @@ func (a *UniquesApps) fetchUniqueApps() (
 		return nil, err
 	}
 
+	if res.Errors != nil {
+		a.Logger.LogWithFields(logrus.DebugLevel, APPS_UNIQUES_GRAPHQL_HAS_RETURNED_ERRORS,
+			map[string]string{
+				"tracker.package": "pkg.traces.apps",
+				"tracker.file":    "uniques.go",
+				"tracker.error":   fmt.Sprintf("%v", res.Errors),
+			})
+		return nil, errors.New(APPS_UNIQUES_GRAPHQL_HAS_RETURNED_ERRORS)
+	}
+
 	return res.Data.Actor.Nrql.Results[0].Apps, nil
 }
 
@@ -145,12 +156,6 @@ func (a *UniquesApps) flushMetrics(
 	if err != nil {
 		return err
 	}
-
-	a.Logger.LogWithFields(logrus.DebugLevel, APPS_UNIQUES_METRICS_ARE_FORWARDED,
-		map[string]string{
-			"tracker.package": "pkg.traces.apps",
-			"tracker.file":    "uniques.go",
-		})
 
 	return nil
 }
