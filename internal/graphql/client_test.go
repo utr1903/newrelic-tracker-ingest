@@ -148,7 +148,7 @@ func Test_PerformingHttpRequestFails(t *testing.T) {
 	assert.Contains(t, logger.msgs, GRAPHQL_PERFORMING_HTTP_REQUEST_HAS_FAILED)
 }
 
-func Test_ReadingHttpRequestFails(t *testing.T) {
+func Test_GraphQlReturnsNotOkStatus(t *testing.T) {
 	newrelicGraphQlServerMock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			var b bytes.Buffer
