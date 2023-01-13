@@ -24,6 +24,7 @@ const queryTemplate = `
   }
 }
 `
+
 const trackedAttributeType = "uniqueAppNames"
 
 type queryVariables struct {
