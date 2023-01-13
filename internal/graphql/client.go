@@ -18,6 +18,13 @@ type graphQlRequestPayload struct {
 	Query string `json:"query"`
 }
 
+type IGraphQlClient interface {
+	Execute(
+		queryVariables any,
+		result any,
+	) error
+}
+
 type GraphQlClient struct {
 	Logger                  logging.ILogger
 	HttpClient              *http.Client

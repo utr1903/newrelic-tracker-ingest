@@ -41,7 +41,7 @@ type appIngest struct {
 type DataIngest struct {
 	AccountId       int64
 	Logger          logging.ILogger
-	Gqlc            *graphql.GraphQlClient
+	Gqlc            graphql.IGraphQlClient
 	MetricForwarder *metrics.MetricForwarder
 }
 
