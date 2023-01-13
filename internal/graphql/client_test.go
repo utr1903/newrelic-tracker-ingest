@@ -50,10 +50,6 @@ func (l *loggerMock) Flush() error {
 	return nil
 }
 
-func (l *loggerMock) getLogs() []string {
-	return l.msgs
-}
-
 type graphqlResponseMock struct {
 	Result string
 }
@@ -125,7 +121,7 @@ func Test_CreatingHttpRequestFails(t *testing.T) {
 		res)
 
 	assert.NotNil(t, err)
-	assert.Contains(t, logger.getLogs(), GRAPHQL_CREATING_HTTP_REQUEST_HAS_FAILED)
+	assert.Contains(t, logger.msgs, GRAPHQL_CREATING_HTTP_REQUEST_HAS_FAILED)
 }
 
 func Test_PerformingHttpRequestFails(t *testing.T) {
@@ -149,7 +145,7 @@ func Test_PerformingHttpRequestFails(t *testing.T) {
 		res)
 
 	assert.NotNil(t, err)
-	assert.Contains(t, logger.getLogs(), GRAPHQL_PERFORMING_HTTP_REQUEST_HAS_FAILED)
+	assert.Contains(t, logger.msgs, GRAPHQL_PERFORMING_HTTP_REQUEST_HAS_FAILED)
 }
 
 func Test_ReadingHttpRequestFails(t *testing.T) {
@@ -181,7 +177,7 @@ func Test_ReadingHttpRequestFails(t *testing.T) {
 		res)
 
 	assert.NotNil(t, err)
-	assert.Contains(t, logger.getLogs(), GRAPHQL_RESPONSE_HAS_RETURNED_NOT_OK_STATUS_CODE)
+	assert.Contains(t, logger.msgs, GRAPHQL_RESPONSE_HAS_RETURNED_NOT_OK_STATUS_CODE)
 }
 
 func Test_ParsingHttpRequestFails(t *testing.T) {
@@ -215,7 +211,7 @@ func Test_ParsingHttpRequestFails(t *testing.T) {
 		res)
 
 	assert.NotNil(t, err)
-	assert.Contains(t, logger.getLogs(), GRAPHQL_PARSING_HTTP_RESPONSE_BODY_HAS_FAILED)
+	assert.Contains(t, logger.msgs, GRAPHQL_PARSING_HTTP_RESPONSE_BODY_HAS_FAILED)
 }
 
 func Test_GraphQlRequestSucceeds(t *testing.T) {
