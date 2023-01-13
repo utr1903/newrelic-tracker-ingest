@@ -108,7 +108,7 @@ func (d *DataIngest) fetchDataIngets() (
 ) {
 	qv := &queryVariables{
 		AccountId: d.AccountId,
-		NrqlQuery: "FROM Span, ErrorTrace, SqlTrace SELECT bytecountestimate()/10e8 AS `ingest` WHERE instrumentation.provider != 'pixie' FACET entity.name AS `app` SINCE 1 week ago LIMIT MAX",
+		NrqlQuery: "FROM Span, ErrorTrace, SqlTrace SELECT bytecountestimate()/10e8 AS `ingest` WHERE instrumentation.provider != `pixie` FACET entity.name AS `app` SINCE 1 week ago LIMIT MAX",
 	}
 
 	res := &graphql.GraphQlResponse[appIngest]{}
