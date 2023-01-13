@@ -11,23 +11,24 @@ import (
 	"time"
 )
 
-const UNIQUE_APPLICATION_NAMES = "unique_app_names"
-
 type graphQlRequestPayload struct {
 	Query string `json:"query"`
 }
 
 type GraphQlClient struct {
-	HttpClient    *http.Client
-	QueryTemplate string
+	HttpClient        *http.Client
+	QueryTemplateName string
+	QueryTemplate     string
 }
 
 func NewGraphQlClient(
+	queryTemplateName string,
 	queryTemplate string,
 ) *GraphQlClient {
 	return &GraphQlClient{
-		HttpClient:    &http.Client{Timeout: time.Duration(30 * time.Second)},
-		QueryTemplate: queryTemplate,
+		HttpClient:        &http.Client{Timeout: time.Duration(30 * time.Second)},
+		QueryTemplateName: queryTemplateName,
+		QueryTemplate:     queryTemplate,
 	}
 }
 
@@ -87,7 +88,7 @@ func (c *GraphQlClient) substituteTemplateQuery(
 	error,
 ) {
 	// Parse query template
-	t, err := template.New(UNIQUE_APPLICATION_NAMES).Parse(c.QueryTemplate)
+	t, err := template.New(c.QueryTemplateName).Parse(c.QueryTemplate)
 	if err != nil {
 		return nil, err
 	}
