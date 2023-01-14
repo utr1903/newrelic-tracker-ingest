@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+
 	"github.com/utr1903/newrelic-tracker-ingest/internal/graphql"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
 )
 
-func FetchUniqueApps[T any](
+func Fetch[T any](
 	logger logging.ILogger,
 	gqlc graphql.IGraphQlClient,
 	qv any,

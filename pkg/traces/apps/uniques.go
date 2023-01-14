@@ -111,7 +111,7 @@ func (a *UniquesApps) fetchUniqueApps() (
 		NrqlQuery: "FROM Span SELECT uniques(entity.name) AS `apps` SINCE 1 week ago LIMIT MAX",
 	}
 
-	apps, err := fetch.FetchUniqueApps[appNames](
+	apps, err := fetch.Fetch[appNames](
 		a.Logger,
 		a.Gqlc,
 		qv,
