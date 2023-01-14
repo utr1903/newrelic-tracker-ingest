@@ -18,7 +18,6 @@ func (mf *metricForwarderMock) AddMetric(
 	metricValue float64,
 	metricAttributes map[string]string,
 ) {
-
 }
 
 func (mf *metricForwarderMock) Run() error {
