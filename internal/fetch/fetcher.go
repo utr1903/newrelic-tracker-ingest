@@ -10,6 +10,10 @@ import (
 	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
 )
 
+const (
+	FETCHER_GRAPHQL_HAS_RETURNED_ERRORS = "graphql has returned errors"
+)
+
 func Fetch[T any](
 	logger logging.ILogger,
 	gqlc graphql.IGraphQlClient,
