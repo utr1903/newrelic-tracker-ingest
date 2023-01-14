@@ -27,8 +27,8 @@ func Fetch[T any](
 	if res.Errors != nil {
 		logger.LogWithFields(logrus.DebugLevel, FETCHER_GRAPHQL_HAS_RETURNED_ERRORS,
 			map[string]string{
-				"tracker.package": "pkg.traces.apps",
-				"tracker.file":    "uniques.go",
+				"tracker.package": "internal.fetch",
+				"tracker.file":    "fetcher.go",
 				"tracker.error":   fmt.Sprintf("%v", res.Errors),
 			})
 		return nil, errors.New(FETCHER_GRAPHQL_HAS_RETURNED_ERRORS)
