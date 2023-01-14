@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/fetch"
+	"github.com/utr1903/newrelic-tracker-ingest/internal/flush"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/graphql"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/metrics"
@@ -126,27 +125,17 @@ func (a *UniquesApps) fetchUniqueApps() (
 func (a *UniquesApps) flushMetrics(
 	appNames []string,
 ) error {
-
-	a.Logger.LogWithFields(logrus.DebugLevel, APPS_UNIQUES_FLUSHING_METRICS,
-		map[string]string{
-			"tracker.package": "pkg.traces.apps",
-			"tracker.file":    "uniques.go",
-		})
-
-	// Add individual metrics
+	metrics := []flush.FlushMetric{}
 	for _, appName := range appNames {
-		a.MetricForwarder.AddMetric(
-			time.Now().UnixMicro(),
-			"tracker.isActive",
-			"gauge",
-			1.0,
-			map[string]string{
+		metrics = append(metrics, flush.FlushMetric{
+			Name:  "tracker.isActive",
+			Value: 1.0,
+			Attributes: map[string]string{
 				"tracker.appName": appName,
 			},
-		)
+		})
 	}
-
-	err := a.MetricForwarder.Run()
+	err := flush.Flush(a.MetricForwarder, metrics)
 	if err != nil {
 		return err
 	}

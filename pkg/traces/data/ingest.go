@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/fetch"
+	"github.com/utr1903/newrelic-tracker-ingest/internal/flush"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/graphql"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/metrics"
@@ -127,27 +126,17 @@ func (d *DataIngest) fetchDataIngets() (
 func (d *DataIngest) flushMetrics(
 	appIngests []appIngest,
 ) error {
-
-	d.Logger.LogWithFields(logrus.DebugLevel, APPS_INGESTS_FLUSHING_METRICS,
-		map[string]string{
-			"tracker.package": "pkg.traces.data",
-			"tracker.file":    "ingest.go",
-		})
-
-	// Add individual metrics
+	metrics := []flush.FlushMetric{}
 	for _, appIngest := range appIngests {
-		d.MetricForwarder.AddMetric(
-			time.Now().UnixMicro(),
-			"tracker.dataIngest",
-			"gauge",
-			appIngest.Ingest,
-			map[string]string{
+		metrics = append(metrics, flush.FlushMetric{
+			Name:  "tracker.dataIngest",
+			Value: appIngest.Ingest,
+			Attributes: map[string]string{
 				"tracker.appName": appIngest.App,
 			},
-		)
+		})
 	}
-
-	err := d.MetricForwarder.Run()
+	err := flush.Flush(d.MetricForwarder, metrics)
 	if err != nil {
 		return err
 	}

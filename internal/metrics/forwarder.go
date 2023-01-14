@@ -91,6 +91,11 @@ func (mf *MetricForwarder) AddMetric(
 }
 
 func (mf *MetricForwarder) Run() error {
+	mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_FORWARDING_METRICS,
+		map[string]string{
+			"tracker.package": "internal.metrics",
+			"tracker.file":    "forwarder.go",
+		})
 
 	if len(mf.MetricObjects[0].Metrics) == 0 {
 		mf.Logger.LogWithFields(logrus.DebugLevel, METRICS_THERE_ARE_NO_METRICS_TO_SEND,
