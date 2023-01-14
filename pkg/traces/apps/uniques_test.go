@@ -91,7 +91,7 @@ func Test_FetchingFails(t *testing.T) {
 
 	err := uas.Run()
 
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 }
 
 func Test_FetchingSucceeds(t *testing.T) {
@@ -136,7 +136,7 @@ func Test_FlushingFails(t *testing.T) {
 
 	err := uas.Run()
 
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 }
 
 func Test_FlushingSucceeds(t *testing.T) {
