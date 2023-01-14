@@ -1,13 +1,13 @@
 package data
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/utr1903/newrelic-tracker-ingest/internal/fetch"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/graphql"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
 	"github.com/utr1903/newrelic-tracker-ingest/internal/metrics"
@@ -112,23 +112,16 @@ func (d *DataIngest) fetchDataIngets() (
 		NrqlQuery: "FROM Span, ErrorTrace, SqlTrace SELECT bytecountestimate()/10e8 AS `ingest` WHERE instrumentation.provider != `pixie` FACET entity.name AS `app` SINCE 1 week ago LIMIT MAX",
 	}
 
-	res := &graphql.GraphQlResponse[appIngest]{}
-	err := d.Gqlc.Execute(qv, res)
+	apps, err := fetch.FetchUniqueApps[appIngest](
+		d.Logger,
+		d.Gqlc,
+		qv,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if res.Errors != nil {
-		d.Logger.LogWithFields(logrus.DebugLevel, APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS,
-			map[string]string{
-				"tracker.package": "pkg.traces.data",
-				"tracker.file":    "ingest.go",
-				"tracker.error":   fmt.Sprintf("%v", res.Errors),
-			})
-		return nil, errors.New(APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS)
-	}
-
-	return res.Data.Actor.Nrql.Results, nil
+	return apps, nil
 }
 
 func (d *DataIngest) flushMetrics(
