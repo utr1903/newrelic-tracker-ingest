@@ -42,7 +42,7 @@ type DataIngest struct {
 	AccountId       int64
 	Logger          logging.ILogger
 	Gqlc            graphql.IGraphQlClient
-	MetricForwarder *metrics.MetricForwarder
+	MetricForwarder metrics.IMetricForwarder
 }
 
 func NewDataIngests(

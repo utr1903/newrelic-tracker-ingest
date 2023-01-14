@@ -29,6 +29,18 @@ type metricObject struct {
 	Metrics []metricBlock `json:"metrics"`
 }
 
+type IMetricForwarder interface {
+	AddMetric(
+		metricTimestamp int64,
+		metricName string,
+		metricType string,
+		metricValue float64,
+		metricAttributes map[string]string,
+	)
+
+	Run() error
+}
+
 type MetricForwarder struct {
 	Logger           logging.ILogger
 	MetricObjects    []metricObject
