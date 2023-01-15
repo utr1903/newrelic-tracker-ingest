@@ -5,11 +5,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/utr1903/newrelic-tracker-ingest/internal/fetch"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/flush"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/graphql"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/metrics"
+	fetch "github.com/utr1903/newrelic-tracker-internal/fetch"
+	flush "github.com/utr1903/newrelic-tracker-internal/flush"
+	graphql "github.com/utr1903/newrelic-tracker-internal/graphql"
+	logging "github.com/utr1903/newrelic-tracker-internal/logging"
+	metrics "github.com/utr1903/newrelic-tracker-internal/metrics"
 )
 
 const queryTemplate = `
