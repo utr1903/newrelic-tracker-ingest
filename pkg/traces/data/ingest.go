@@ -5,11 +5,17 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/utr1903/newrelic-tracker-ingest/internal/fetch"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/flush"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/graphql"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/logging"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/metrics"
+	fetch "github.com/utr1903/newrelic-tracker-internal/fetch"
+	flush "github.com/utr1903/newrelic-tracker-internal/flush"
+	graphql "github.com/utr1903/newrelic-tracker-internal/graphql"
+	logging "github.com/utr1903/newrelic-tracker-internal/logging"
+	metrics "github.com/utr1903/newrelic-tracker-internal/metrics"
+)
+
+const (
+	APPS_INGESTS_FLUSHING_METRICS            = "flushing metrics"
+	APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS = "graphql has returned errors"
+	APPS_INGESTS_LOGS_COULD_NOT_BE_FORWARDED = "logs could not be forwarded"
 )
 
 const queryTemplate = `

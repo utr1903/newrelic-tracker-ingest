@@ -6,7 +6,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/utr1903/newrelic-tracker-ingest/internal/graphql"
+
+	graphql "github.com/utr1903/newrelic-tracker-internal/graphql"
 )
 
 type loggerMock struct {
