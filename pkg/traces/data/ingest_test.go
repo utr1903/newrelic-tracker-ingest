@@ -44,6 +44,7 @@ var appIngests = []appIngest{
 
 type graphqlClientMock struct {
 	failRequest bool
+	returnError bool
 }
 
 func (c *graphqlClientMock) Execute(
@@ -52,6 +53,12 @@ func (c *graphqlClientMock) Execute(
 ) error {
 	if c.failRequest {
 		return errors.New("error")
+	}
+
+	if c.returnError {
+		res := result.(*nrql.GraphQlNrqlResponse[appIngest])
+		res.Errors = []string{"error"}
+		return nil
 	}
 
 	res := result.(*nrql.GraphQlNrqlResponse[appIngest])
@@ -100,6 +107,29 @@ func Test_FetchingFails(t *testing.T) {
 	err := uas.Run()
 
 	assert.Nil(t, err)
+}
+
+func Test_FetchingReturnsError(t *testing.T) {
+	logger := newLoggerMock()
+	gqlc := &graphqlClientMock{
+		failRequest: false,
+		returnError: true,
+	}
+	mf := &metricForwarderMock{
+		returnError: true,
+	}
+
+	uas := &DataIngest{
+		AccountId:       int64(12345),
+		Logger:          logger,
+		Gqlc:            gqlc,
+		MetricForwarder: mf,
+	}
+
+	err := uas.Run()
+
+	assert.Nil(t, err)
+	assert.Contains(t, logger.msgs, APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS)
 }
 
 func Test_FetchingSucceeds(t *testing.T) {
