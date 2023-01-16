@@ -1,10 +1,13 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+	"github.com/utr1903/newrelic-tracker-ingest/pkg/graphql/nrql"
 	fetch "github.com/utr1903/newrelic-tracker-internal/fetch"
 	flush "github.com/utr1903/newrelic-tracker-internal/flush"
 	graphql "github.com/utr1903/newrelic-tracker-internal/graphql"
@@ -13,6 +16,7 @@ import (
 )
 
 const (
+	APPS_UNIQUES_GRAPHQL_HAS_RETURNED_ERRORS = "graphql has returned errors"
 	APPS_UNIQUES_LOGS_COULD_NOT_BE_FORWARDED = "logs could not be forwarded"
 )
 
@@ -114,16 +118,26 @@ func (a *UniquesApps) fetchUniqueApps() (
 		NrqlQuery: "FROM Span SELECT uniques(entity.name) AS `apps` SINCE 1 week ago LIMIT MAX",
 	}
 
-	apps, err := fetch.Fetch[appNames](
-		a.Logger,
+	res := &nrql.GraphQlNrqlResponse[appNames]{}
+	err := fetch.Fetch(
 		a.Gqlc,
 		qv,
+		res,
 	)
 	if err != nil {
 		return nil, err
 	}
+	if res.Errors != nil {
+		a.Logger.LogWithFields(logrus.DebugLevel, APPS_UNIQUES_GRAPHQL_HAS_RETURNED_ERRORS,
+			map[string]string{
+				"tracker.package": "pkg.traces.apps",
+				"tracker.file":    "uniques.go",
+				"tracker.error":   fmt.Sprintf("%v", res.Errors),
+			})
+		return nil, errors.New(APPS_UNIQUES_GRAPHQL_HAS_RETURNED_ERRORS)
+	}
 
-	return apps[0].Apps, nil
+	return res.Data.Actor.Nrql.Results[0].Apps, nil
 }
 
 func (a *UniquesApps) flushMetrics(

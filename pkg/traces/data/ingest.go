@@ -1,10 +1,13 @@
 package data
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+	nrql "github.com/utr1903/newrelic-tracker-ingest/pkg/graphql/nrql"
 	fetch "github.com/utr1903/newrelic-tracker-internal/fetch"
 	flush "github.com/utr1903/newrelic-tracker-internal/flush"
 	graphql "github.com/utr1903/newrelic-tracker-internal/graphql"
@@ -13,6 +16,7 @@ import (
 )
 
 const (
+	APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS = "graphql has returned errors"
 	APPS_INGESTS_LOGS_COULD_NOT_BE_FORWARDED = "logs could not be forwarded"
 )
 
@@ -115,16 +119,26 @@ func (d *DataIngest) fetchDataIngets() (
 		NrqlQuery: "FROM Span, ErrorTrace, SqlTrace SELECT bytecountestimate()/10e8 AS `ingest` WHERE instrumentation.provider != `pixie` FACET entity.name AS `app` SINCE 1 week ago LIMIT MAX",
 	}
 
-	apps, err := fetch.Fetch[appIngest](
-		d.Logger,
+	res := &nrql.GraphQlNrqlResponse[appIngest]{}
+	err := fetch.Fetch(
 		d.Gqlc,
 		qv,
+		res,
 	)
 	if err != nil {
 		return nil, err
 	}
+	if res.Errors != nil {
+		d.Logger.LogWithFields(logrus.DebugLevel, APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS,
+			map[string]string{
+				"tracker.package": "pkg.traces.data",
+				"tracker.file":    "ingest.go",
+				"tracker.error":   fmt.Sprintf("%v", res.Errors),
+			})
+		return nil, errors.New(APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS)
+	}
 
-	return apps, nil
+	return res.Data.Actor.Nrql.Results, nil
 }
 
 func (d *DataIngest) flushMetrics(

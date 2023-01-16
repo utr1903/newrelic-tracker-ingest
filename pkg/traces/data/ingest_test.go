@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	graphql "github.com/utr1903/newrelic-tracker-internal/graphql"
+	"github.com/utr1903/newrelic-tracker-ingest/pkg/graphql/nrql"
 )
 
 type loggerMock struct {
@@ -18,6 +18,7 @@ func newLoggerMock() *loggerMock {
 		msgs: make([]string, 0),
 	}
 }
+
 func (l *loggerMock) LogWithFields(
 	lvl logrus.Level,
 	msg string,
@@ -43,6 +44,7 @@ var appIngests = []appIngest{
 
 type graphqlClientMock struct {
 	failRequest bool
+	returnError bool
 }
 
 func (c *graphqlClientMock) Execute(
@@ -53,7 +55,13 @@ func (c *graphqlClientMock) Execute(
 		return errors.New("error")
 	}
 
-	res := result.(*graphql.GraphQlResponse[appIngest])
+	if c.returnError {
+		res := result.(*nrql.GraphQlNrqlResponse[appIngest])
+		res.Errors = []string{"error"}
+		return nil
+	}
+
+	res := result.(*nrql.GraphQlNrqlResponse[appIngest])
 	res.Data.Actor.Nrql.Results = appIngests
 	res.Errors = nil
 	return nil
@@ -99,6 +107,29 @@ func Test_FetchingFails(t *testing.T) {
 	err := uas.Run()
 
 	assert.Nil(t, err)
+}
+
+func Test_FetchingReturnsError(t *testing.T) {
+	logger := newLoggerMock()
+	gqlc := &graphqlClientMock{
+		failRequest: false,
+		returnError: true,
+	}
+	mf := &metricForwarderMock{
+		returnError: true,
+	}
+
+	uas := &DataIngest{
+		AccountId:       int64(12345),
+		Logger:          logger,
+		Gqlc:            gqlc,
+		MetricForwarder: mf,
+	}
+
+	err := uas.Run()
+
+	assert.Nil(t, err)
+	assert.Contains(t, logger.msgs, APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS)
 }
 
 func Test_FetchingSucceeds(t *testing.T) {
