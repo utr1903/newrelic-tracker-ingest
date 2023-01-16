@@ -13,8 +13,6 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/utr1903/newrelic-tracker-internal v0.0.1 h1:NQMQn+3cCnev0CvMgxKOjV7RLcDtnpDW+hlbk/Xhcfo=
-github.com/utr1903/newrelic-tracker-internal v0.0.1/go.mod h1:da/H6BjT9e2X1GfvaoEqat38KWhLU0bAevPpSm7PafM=
 github.com/utr1903/newrelic-tracker-internal v0.0.2-alpha h1:Dyct2LOrLYsdej+ydk/oaHLcoTK0rG5FG5B2CnQCsWw=
 github.com/utr1903/newrelic-tracker-internal v0.0.2-alpha/go.mod h1:da/H6BjT9e2X1GfvaoEqat38KWhLU0bAevPpSm7PafM=
 golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 h1:0A+M6Uqn+Eje4kHMK80dtF3JCXC4ykBgQG4Fe06QRhQ=
