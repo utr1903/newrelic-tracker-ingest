@@ -6,8 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-
-	graphql "github.com/utr1903/newrelic-tracker-internal/graphql"
+	"github.com/utr1903/newrelic-tracker-ingest/pkg/graphql/nrql"
 )
 
 type loggerMock struct {
@@ -19,6 +18,7 @@ func newLoggerMock() *loggerMock {
 		msgs: make([]string, 0),
 	}
 }
+
 func (l *loggerMock) LogWithFields(
 	lvl logrus.Level,
 	msg string,
@@ -45,7 +45,7 @@ func (c *graphqlClientMock) Execute(
 		return errors.New("error")
 	}
 
-	res := result.(*graphql.GraphQlResponse[appNames])
+	res := result.(*nrql.GraphQlNrqlResponse[appNames])
 	res.Data.Actor.Nrql.Results = []appNames{{
 		Apps: apps,
 	}}
