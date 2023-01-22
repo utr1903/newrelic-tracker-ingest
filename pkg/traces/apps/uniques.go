@@ -94,13 +94,13 @@ func (a *UniquesApps) Run() error {
 	// Fetch the unique application names per GraphQL
 	appNames, err := a.fetchUniqueApps()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Create & flush metrics
 	err = a.flushMetrics(appNames)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Flush logs
@@ -146,10 +146,10 @@ func (a *UniquesApps) flushMetrics(
 	metrics := []flush.FlushMetric{}
 	for _, appName := range appNames {
 		metrics = append(metrics, flush.FlushMetric{
-			Name:  "tracker.isActive",
+			Name:  "tracker.traces.apps.isActive",
 			Value: 1.0,
 			Attributes: map[string]string{
-				"tracker.appName": appName,
+				"tracker.traces.apps.appName": appName,
 			},
 		})
 	}

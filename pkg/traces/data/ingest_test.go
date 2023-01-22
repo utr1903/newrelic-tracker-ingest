@@ -106,7 +106,7 @@ func Test_FetchingFails(t *testing.T) {
 
 	err := uas.Run()
 
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 }
 
 func Test_FetchingReturnsError(t *testing.T) {
@@ -128,7 +128,7 @@ func Test_FetchingReturnsError(t *testing.T) {
 
 	err := uas.Run()
 
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 	assert.Contains(t, logger.msgs, APPS_INGESTS_GRAPHQL_HAS_RETURNED_ERRORS)
 }
 
@@ -174,7 +174,7 @@ func Test_FlushingFails(t *testing.T) {
 
 	err := uas.Run()
 
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 }
 
 func Test_FlushingSucceeds(t *testing.T) {

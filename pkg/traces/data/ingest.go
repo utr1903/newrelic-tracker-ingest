@@ -95,13 +95,13 @@ func (d *DataIngest) Run() error {
 	// Fetch the unique application names per GraphQL
 	appIngests, err := d.fetchDataIngets()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Create & flush metrics
 	err = d.flushMetrics(appIngests)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Flush logs
@@ -147,10 +147,10 @@ func (d *DataIngest) flushMetrics(
 	metrics := []flush.FlushMetric{}
 	for _, appIngest := range appIngests {
 		metrics = append(metrics, flush.FlushMetric{
-			Name:  "tracker.dataIngest",
+			Name:  "tracker.traces.dataIngest",
 			Value: appIngest.Ingest,
 			Attributes: map[string]string{
-				"tracker.appName": appIngest.App,
+				"tracker.traces.appName": appIngest.App,
 			},
 		})
 	}
